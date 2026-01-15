@@ -1,48 +1,51 @@
 import os
+from typing import List, Iterable # 型定義用のモジュール
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 
 load_dotenv()
 
-def main():
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0.7
-    )
+# モデルの初期化 (グローバルまたはクラス内で型指定)
+llm: ChatGoogleGenerativeAI = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0.7
+)
 
-    # 1. 会話履歴を保持するリスト（ここが「記憶」の実体）
-    chat_history = []
+def get_chat_response_stream(messages: List[BaseMessage]) -> Iterable:
+    """
+    会話履歴を受け取り、AIの応答ストリームを返す
+    """
+    # ここで引数が List[BaseMessage] であることを明示しているため、
+    # 呼び出し側で変な値を渡すとエディタが警告してくれます。
+    return llm.stream(messages)
 
-    print("Bot: 起動しました。（終了するには 'exit' と入力）")
+def main() -> None:
+    # TypeScriptの 'const chatHistory: BaseMessage[] = []' と同等
+    chat_history: List[BaseMessage] = []
+
+    print("Bot: 起動しました。（型安全Ver.）")
 
     while True:
-        # ユーザー入力を受け付け
-        user_input = input("You: ")
+        user_input: str = input("You: ")
         
         if user_input.lower() == "exit":
             break
 
-        # 2. ユーザーの発言を履歴に追加
         chat_history.append(HumanMessage(content=user_input))
 
-        # 3. 履歴「すべて」をAPIに投げる
-        # これにより、AIは過去の会話（自分の発言含む）を「読む」ことができる
-        response_stream = llm.stream(chat_history)
+        # 関数のシグネチャが明確なので、戻り値の扱いも迷わない
+        response_stream = get_chat_response_stream(chat_history)
 
         print("Bot: ", end="")
-        full_response = ""
+        full_response: str = ""
         
-        # ストリーミング表示処理
         for chunk in response_stream:
-            content = chunk.content
+            content: str = chunk.content
             print(content, end="", flush=True)
             full_response += content
         
-        print() # 改行
-
-        # 4. AIの返答も履歴に追加
-        # これを忘れると、AIは「自分がさっき何を言ったか」を忘れてしまう
+        print()
         chat_history.append(AIMessage(content=full_response))
 
 if __name__ == "__main__":
