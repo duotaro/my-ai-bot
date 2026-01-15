@@ -1,18 +1,16 @@
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage
 
 load_dotenv()
 
-def main():
+def main_bad_ai():
+
     llm = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
         temperature=0.7
     )
-
-    # 1. 会話履歴を保持するリスト（ここが「記憶」の実体）
-    chat_history = []
 
     print("Bot: 起動しました。（終了するには 'exit' と入力）")
 
@@ -23,12 +21,12 @@ def main():
         if user_input.lower() == "exit":
             break
 
-        # 2. ユーザーの発言を履歴に追加
-        chat_history.append(HumanMessage(content=user_input))
 
         # 3. 履歴「すべて」をAPIに投げる
         # これにより、AIは過去の会話（自分の発言含む）を「読む」ことができる
-        response_stream = llm.stream(chat_history)
+        response_stream = llm.stream([
+            HumanMessage(content=user_input)
+        ])
 
         print("Bot: ", end="")
         full_response = ""
@@ -38,12 +36,6 @@ def main():
             content = chunk.content
             print(content, end="", flush=True)
             full_response += content
-        
-        print() # 改行
-
-        # 4. AIの返答も履歴に追加
-        # これを忘れると、AIは「自分がさっき何を言ったか」を忘れてしまう
-        chat_history.append(AIMessage(content=full_response))
 
 if __name__ == "__main__":
-    main()
+    main_bad_ai()
