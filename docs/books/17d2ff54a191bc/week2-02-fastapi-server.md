@@ -4,13 +4,13 @@ title: "第5章: FastAPIでPython製のAI APIサーバーを構築する"
 
 ## CLIからの卒業、Web APIへの道
 
-Week 2の前半では、RAGによってAIに外部知識を授ける方法を学びました。しかし、現状の `rag.py` や `main.py` は、開発者のターミナルでしか動かないCLIアプリケーションのままです。
+Week 2の前半では、RAGによってAIに外部知識を授ける方法を学びました。しかし、現状の `rag_local_embedding.py` や `main.py` は、開発者のターミナルでしか動かないCLIアプリケーションのままです。
 
 これをWebアプリケーションやスマートフォンアプリから利用できるようにするには、**Web API**として機能を公開する必要があります。TypeScript/Node.jsエンジニアであれば、ExpressやNestJSを使ってAPIサーバーを立てるのがお馴染みの手法でしょう。
 
 Pythonの世界にも、DjangoやFlaskといった強力なWebフレームワークが存在します。しかし、現代的なAI API開発シーンでは、**FastAPI** というフレームワークが圧倒的な人気を誇っています。今回はその理由を探りながら、Week 1で作ったチャットボットをAPI化していきましょう。
 
-## なぜFastAPIなのか？ (TypeScriptエンジニアの視点)
+## なぜFastAPIなのか？
 
 FastAPIがなぜこれほど支持されるのか。それは、TypeScript/NestJSエンジニアにとって非常に馴染みやすい哲学を持っているからです。
 
@@ -32,15 +32,18 @@ FastAPIがなぜこれほど支持されるのか。それは、TypeScript/NestJ
 
 ```text:requirements.txt
 # ... 既存のライブラリ ...
+langchain-community>=0.3.0
+langchain-chroma>=0.2.0
 fastapi==0.112.0
 uvicorn[standard]==0.30.5
+sentence-transformers>=2.6.0
 ```
 
 `pip install -r requirements.txt` を実行してインストールしてください。
 
 ### 2. APIサーバスクリプトの作成
 
-`server.py` という新しいファイルを作成し、以下のコードを記述します。Week 1の `main.py` のロジックをAPIエンドポイントに移植したものです。
+`server.py` という新しいファイルを作成し、以下のコードを記述します。前章で構築したローカルEmbeddingによるRAG（Retrieval-Augmented Generation）のロジックをFastAPIのAPIエンドポイントに統合したものです。
 
 ```python:server.py
 import os
@@ -50,14 +53,62 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.embeddings import HuggingFaceEmbeddings # 追加
+from langchain.text_splitter import RecursiveCharacterTextSplitter # 追加
+from langchain_community.document_loaders import TextLoader # 追加
+from langchain_chroma import Chroma # 追加
+from langchain_core.prompts import ChatPromptTemplate # 追加
+from langchain_core.runnables import RunnablePassthrough # 追加
 
 load_dotenv()
 
-# --- 1. LangChainのロジック ---
+# --- 0. モデルの初期化とRAGコンポーネントの設定 ---
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+# 前章で採用したローカルEmbeddingモデルを使用
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2") # 変更
 
-def get_chat_response(messages: List[BaseMessage]) -> str:
-    response = llm.invoke(messages)
+# 知識ファイルの読み込みと分割 (必要に応じてパスを調整)
+# `server.py`がプロジェクトルートにあると仮定
+loader = TextLoader("knowledge.txt")
+documents = loader.load()
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=50,
+)
+chunks = text_splitter.split_documents(documents)
+
+# Vector DBの初期化またはロード
+# persist_directoryは前章で作成されたChromaDBのパスを指定
+vector_store = Chroma.from_documents(
+    documents=chunks, 
+    embedding=embeddings,
+    persist_directory="./chroma_db" 
+)
+
+retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+
+# プロンプトテンプレートの定義
+template = """
+以下のCONTEXTのみを使って、Questionに回答してください。
+
+CONTEXT:
+{context}
+
+Question:
+{question}
+"""
+rag_prompt = ChatPromptTemplate.from_template(template) # プロンプト名をrag_promptに変更
+
+# RAGチェーンの構築
+rag_chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | rag_prompt
+    | llm
+)
+
+def get_rag_response(question: str) -> str: # 関数名をask_ragからget_rag_responseに変更
+    response = rag_chain.invoke(question)
     return response.content
 
 # --- 2. FastAPIのスキーマ定義 (Pydantic) ---
@@ -80,18 +131,20 @@ def read_root():
 
 @app.post("/chat", response_model=ChatResponse)
 def chat_endpoint(request: ChatRequest):
-    chat_history: List[BaseMessage] = []
-    for item in request.history:
-        if item.get("type") == "human":
-            chat_history.append(HumanMessage(content=item.get("content", "")))
-        elif item.get("type") == "ai":
-            chat_history.append(AIMessage(content=item.get("content", "")))
-
-    chat_history.append(HumanMessage(content=request.message))
-    ai_response = get_chat_response(chat_history)
+    # Chat historyはここではRAGチェーンに直接渡さないため、単純な質問応答に変換
+    # より高度な実装では、履歴も考慮したRetrievalやRe-rankingを検討
+    # 現在のRAGチェーンは単一の質問に対する応答に特化
+    question_for_rag = request.message
+    ai_response = get_rag_response(question_for_rag) # RAG関数を呼び出す
     
     return ChatResponse(answer=ai_response)
 ```
+
+:::note
+**補足：チャット履歴の扱いについて**
+
+現在の `chat_endpoint` の実装では、受け取った `history` はRAGの応答生成には直接利用されず、`message` に含まれる単一の質問のみがRAGチェーンに渡されます。これは、本記事で導入するRAGチェーンが、ドキュメントからの関連情報検索と、その情報に基づいた単一の質問応答に特化しているためです。チャット履歴を考慮したより高度な対話システム（例：過去の会話内容を基に質問の意図を汲み取ったり、関連文書の検索を最適化したりする）を構築するには、RAGチェーンの設計にさらなる工夫が必要です。
+:::
 
 ### 3. サーバーの起動と動作確認
 

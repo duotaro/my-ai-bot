@@ -17,5 +17,5 @@ source .venv/bin/activate
 deactivate
 ```
 
-## Week2 第4章: AIに「ドキュメント」を読ませる技術 (RAG入門)"
+## Week2 第5章: FastAPIでPython製のAI APIサーバーを構築する
 
