@@ -131,3 +131,9 @@ mypy main.py
 これで「PythonでGeminiを操り、文脈を理解し、堅牢なコードを書く」土台が完成しました。
 
 来週からは、このチャットボットに**「独自の知識」**を授ける **RAG (Retrieval-Augmented Generation)** の世界に踏み込みます。お楽しみに！
+
+## 本章のソースコード
+
+本章で作成したコードは、以下のGitHubブランチで確認できます。
+
+*   [feature/week1-03-python-typing](https://github.com/duotaro/my-ai-bot/tree/feature/week1-03-python-typing)

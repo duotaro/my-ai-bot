@@ -299,3 +299,10 @@ CONTEXTにはGemini CLIとGeminiファミリーについて記述されていま
 これで、あなたのAIはただの物知りではなく、**特定の知識体系に基づいた回答ができる専門家**に進化しました。
 
 次章では、このRAG機能を持ったチャットボットを、いよいよWeb APIとして公開します。使い慣れたExpress/NestJSと比較しながら、PythonのモダンなWebフレームワーク **FastAPI** の世界に飛び込んでいきましょう。
+
+
+## 本章のソースコード
+
+本章で作成したコードは、以下のGitHubブランチで確認できます。
+
+*   [feature/week2-01-rag-basics](https://github.com/duotaro/my-ai-bot/tree/feature/week2-01-rag-basics)
