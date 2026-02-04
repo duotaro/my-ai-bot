@@ -48,8 +48,6 @@ Vector DBの裏側では、**Embedding（エンベディング、埋め込み）
 # 以下追加するライブラリ
 langchain-community>=0.3.0
 langchain-chroma>=0.2.0
-fastapi==0.112.0
-uvicorn[standard]==0.30.5
 ```
 
 ターミナルで `pip install -r requirements.txt` を実行するのを忘れないでくださいね。

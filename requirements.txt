@@ -8,6 +8,4 @@ langfuse==3.7.0
 # 以下追加するライブラリ
 langchain-community>=0.3.0
 langchain-chroma>=0.2.0
-fastapi==0.112.0
-uvicorn[standard]==0.30.5
 sentence-transformers>=2.6.0 # ←追加
