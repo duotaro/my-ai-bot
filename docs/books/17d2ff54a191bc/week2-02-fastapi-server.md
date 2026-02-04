@@ -192,3 +192,10 @@ uvicorn server:app --reload
 Week 2の学習、お疲れ様でした。これであなたのAIは、CLIの世界を飛び出し、Webの標準的なインターフェースを手に入れました。
 
 来週からは、いよいよ**GenAIOps**の本丸、「Ops（運用）」の世界に足を踏み入れます。作成したFastAPIサーバーを**Dockerコンテナ**化し、クラウドにデプロイする旅が始まります。お楽しみに。
+
+
+## 本章のソースコード
+
+本章で作成したコードは、以下のGitHubブランチで確認できます。
+
+*   [feature/week2-02-fastapi-server](https://github.com/duotaro/my-ai-bot/tree/feature/week2-02-fastapi-server)
