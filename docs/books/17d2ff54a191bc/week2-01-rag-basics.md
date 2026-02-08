@@ -16,7 +16,7 @@ LLMは、その学習データに含まれていない情報（最新のニュ�
 
 RAGの頭脳となるのが **Vector Database（ベクトルデータベース）** です。
 
-Webエンジニアであれば、データベースといえばSQL (MySQL, PostgreSQL) やNoSQL (MongoDB, DynamoDB) を思い浮かべるでしょう。これらは基本的に「キーワード」や「インデックス」に基づいて、完全に一致するデータを高速に検索するのが得意です。
+データベースといえばSQL (MySQL, PostgreSQL) やNoSQL (MongoDB, DynamoDB) を思い浮かべる方が多いでしょう。これらは基本的に「キーワード」や「インデックス」に基づいて、完全に一致するデータを高速に検索するのが得意です。
 
 ```sql
 SELECT * FROM users WHERE name = 'Taro Yamada';
@@ -301,3 +301,10 @@ CONTEXTにはGemini CLIとGeminiファミリーについて記述されていま
 これで、あなたのAIはただの物知りではなく、**特定の知識体系に基づいた回答ができる専門家**に進化しました。
 
 次章では、このRAG機能を持ったチャットボットを、いよいよWeb APIとして公開します。使い慣れたExpress/NestJSと比較しながら、PythonのモダンなWebフレームワーク **FastAPI** の世界に飛び込んでいきましょう。
+
+
+## 本章のソースコード
+
+本章で作成したコードは、以下のGitHubブランチで確認できます。
+
+*   [feature/week2-01-rag-basics](https://github.com/duotaro/my-ai-bot/tree/feature/week2-01-rag-basics)
