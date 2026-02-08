@@ -1,10 +1,10 @@
 ---
-title: "Pythonでも型安全に書きたい！ (Type Hints入門)"
+title: "第3章: Pythonでも型安全に書きたい！ (Type Hints入門)"
 ---
 
 ## 「動けばいい」から「堅牢なコード」へ
 
-TypeScriptエンジニアがPythonを触り始めて一番不安になること、それは **「この変数、結局何が入ってくるの？」** という型への不透明さではないでしょうか。
+静的型付け言語（TypeScript、Java、Goなど）の経験があるエンジニアがPythonを触り始めて一番不安になること、それは **「この変数、結局何が入ってくるの？」** という型への不透明さではないでしょうか。
 
 ```python
 # 戻り値は何？ 文字列？ オブジェクト？
@@ -14,20 +14,20 @@ def get_ai_response(messages):
 
 Pythonは動的型付け言語ですが、Python 3.5以降では **Type Hints（型ヒント）** が導入されており、現代的なAIアプリ開発ではこれを使うのがデファクトスタンダードとなっています。
 
-TypeScriptエンジニアなら、型を定義することで得られる「安心感」と「強力な入力補完」の恩恵を誰よりも知っているはずです。Pythonでもその体験を再現しましょう。
+型を定義することで得られる「安心感」と「強力な入力補完」の恩恵は非常に大きいです。Pythonでもその体験を実現しましょう。
 
-## TS vs Python：型の書き方比較
+## 他言語との型の書き方比較
 
-主要な型の書き方を比較してみましょう。驚くほど似ていることがわかります。
+主要な型の書き方を比較してみましょう。他の言語経験があれば、Pythonの型ヒントもすぐに馴染めるはずです。
 
-| 概念 | TypeScript | Python (Type Hints) |
-| --- | --- | --- |
-| 基本型 | `name: string` | `name: str` |
-| 基本型 | `count: number` | `count: int` / `count: float` |
-| リスト | `tags: string[]` | `tags: list[str]` |
-| 辞書 (Object) | `config: Record<string, string>` | `config: dict[str, str]` |
-| 戻り値なし | `void` | `None` |
-| 任意 (Null許容) | `string \| null` | `Optional[str]` (要import) |
+| 概念 | Python (Type Hints) | 参考：TypeScript | 参考：Java/Go |
+| --- | --- | --- | --- |
+| 文字列 | `name: str` | `name: string` | `String name` / `name string` |
+| 数値 | `count: int` / `count: float` | `count: number` | `int count` / `count int` |
+| リスト | `tags: list[str]` | `tags: string[]` | `List<String>` / `[]string` |
+| 辞書 | `config: dict[str, str]` | `Record<string, string>` | `Map<String,String>` / `map[string]string` |
+| 戻り値なし | `None` | `void` | `void` |
+| Null許容 | `Optional[str]` (要import) | `string \| null` | `@Nullable String` / `*string` |
 
 ## 実践：チャットボットを型安全にリファクタリングする
 
@@ -58,7 +58,7 @@ def get_chat_response_stream(messages: List[BaseMessage]) -> Iterable:
     return llm.stream(messages)
 
 def main() -> None:
-    # TypeScriptの 'const chatHistory: BaseMessage[] = []' と同等
+    # BaseMessage型のリストとして型を明示する
     chat_history: List[BaseMessage] = []
 
     print("Bot: 起動しました。（型安全Ver.）")
@@ -106,13 +106,13 @@ VS Codeの `settings.json` に以下を追加して、型チェックを有効�
 `"basic"` の代わりに `"strict"` を指定すると、さらに厳格なチェックが行われます。この設定により、コードを書いている最中にリアルタイムで型の問題を検知できるようになります。
 
 
-## TSエンジニアが感動するポイント
+## 型ヒントの実用的なメリット
 
 ### 1. VS Codeでの強力な補完
 `List[BaseMessage]` と定義することで、`chat_history[0].` と打った瞬間に、`content` や `type` といったプロパティが候補に出てきます。これはPython開発における最大のストレス緩和剤です。
 
 ### 2. 静的解析ツールによるチェック
-TypeScriptにおける `tsc` のように、Pythonでは `mypy` というツールを使って静的に型チェックを行うことができます。
+Pythonでは `mypy` というツールを使って静的に型チェックを行うことができます。TypeScriptの `tsc` やGoの `go vet` に相当するものです。
 
 ```bash
 pip install mypy
@@ -123,7 +123,7 @@ mypy main.py
 
 ## まとめ
 
-1.  Pythonでも **Type Hints** を使えばTypeScriptに近い開発体験が得られる。
+1.  Pythonでも **Type Hints** を使えば静的型付け言語に近い開発体験が得られる。
 2.  `List`, `Dict`, `Optional` などの基本的なジェネリクスを覚えるだけで、コードの可読性は劇的に上がる。
 3.  AIアプリのように複雑なデータ構造（メッセージのリストなど）を扱う場合、型定義は「必須」である。
 
@@ -131,3 +131,9 @@ mypy main.py
 これで「PythonでGeminiを操り、文脈を理解し、堅牢なコードを書く」土台が完成しました。
 
 来週からは、このチャットボットに**「独自の知識」**を授ける **RAG (Retrieval-Augmented Generation)** の世界に踏み込みます。お楽しみに！
+
+## 本章のソースコード
+
+本章で作成したコードは、以下のGitHubブランチで確認できます。
+
+*   [feature/week1-03-python-typing](https://github.com/duotaro/my-ai-bot/tree/feature/week1-03-python-typing)
