@@ -1,6 +1,6 @@
-title: "TypeScriptエンジニアが挑む！GenAIOps独習ロードマップ 〜GeminiとLangChainで始めるAIアプリ開発〜"
-summary: "TypeScript/Node.jsエンジニアが、Python、Gemini、LangChain、FastAPI、AWS、Next.jsを組み合わせて、実務レベルのAIアプリケーション（GenAIOps）を1ヶ月で構築するための実践ガイド。"
-topics: ["Python", "TypeScript", "Gemini", "LangChain", "FastAPI", "GenAIOps"]
+title: "GenAIOps独習ロードマップ 〜GeminiとLangChainで始めるAIアプリ開発〜"
+summary: "Python・Gemini・LangChain・FastAPIを組み合わせて、実務レベルのAIアプリケーション（GenAIOps）を1ヶ月で構築するための実践ガイド。環境構築からRAG、観測性、評価まで一気通貫で学べます。"
+topics: ["Python", "GenAIOps", "Gemini", "LangChain", "FastAPI", "LLMOps"]
 published: false
 price: 0 # 有料の場合200〜5000
 # 本に含めるチャプターを順番に並べましょう

@@ -1,16 +1,16 @@
-# Zenn Book 構成案：TypeScriptエンジニアのためのGenAIOps入門
+# Zenn Book 構成案：GenAIOps独習ロードマップ
 
 ## 書籍情報
-- **タイトル**: TypeScriptエンジニアが挑む！GenAIOps独習ロードマップ 〜GeminiとLangChainで始めるAIアプリ開発〜
-- **ターゲット**: 
-    - 普段はTypeScript/Node.jsを書いているWebエンジニア
+- **タイトル**: GenAIOps独習ロードマップ 〜GeminiとLangChainで始めるAIアプリ開発〜
+- **ターゲット**:
+    - 何らかのプログラミング経験があり、AIアプリ開発に興味があるエンジニア
     - AIに興味はあるが、Pythonやインフラ（Ops）周りに不安がある人
     - 「触ってみた」レベルを卒業し、実務で使えるレベル（GenAIOps）を目指す人
 
 ## コンセプト
-- **"From TypeScript to Python"**: 
-    - 常にTypeScript/Node.jsの概念（npm, node_modules, async/await, Type）と比較しながら解説する。
-- **"Gemini First"**: 
+- **"Learn by Building"**:
+    - 他言語の経験を活かしながら、Pythonのエコシステムに飛び込み、実践的にAIアプリを構築する。
+- **"Gemini First"**:
     - 多くの教材がOpenAI前提の中で、コストパフォーマンスと性能に優れた**Gemini 2.5 (Flash)** を採用する独自性を出す。
 - **"Ops Mindset"**:
     - 単に動くコードを書くだけでなく、「コスト」「レイテンシ」「観測性」を意識した構成にする。
@@ -19,7 +19,7 @@
 
 ## チャプター構成 (Week 1: Python & GenAI基礎)
 
-### 第1章: TSエンジニアのためのPython環境構築とGemini API
+### 第1章: Python環境構築とGemini APIの最小構成
 - **スラッグ**: `week1-01-setup-gemini`
 
 ### 第2章: ステートレスなAIに「記憶」を実装する

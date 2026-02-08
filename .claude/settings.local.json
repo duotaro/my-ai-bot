@@ -6,7 +6,8 @@
       "Bash(do echo \"=== $branch ===\")",
       "Bash(done)",
       "Bash(for branch in feature/week2-01-rag-basics feature/week2-02-fastapi-server feature/week3-01-docker-container)",
-      "Bash(for branch in feature/week2-01-rag-basics feature/week2-02-fastapi-server feature/week3-01-observability-langfuse)"
+      "Bash(for branch in feature/week2-01-rag-basics feature/week2-02-fastapi-server feature/week3-01-observability-langfuse)",
+      "Bash(git stash:*)"
     ]
   }
 }
