@@ -2,6 +2,4 @@
 __pycache__/
 .env
 chroma_db/
-# docs/books
-# docs/prompt.md
-# docs/week1.md
+docs
