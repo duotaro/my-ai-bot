@@ -10,8 +10,9 @@ chapters:
   - week1-03-python-typing
   - week2-01-rag-basics
   - week2-02-fastapi-server
-  - week3-01-docker-container
-  - week3-02-observability-langfuse
-  - week3-03-evaluation-prompt-management
+  - week3-01-observability-langfuse
+  - week3-02-evaluation-prompt-management
+  - week3-03-guardrails
+  - week3-04-rag-improvement
   - week4-01-deploy-and-ui
   - week4-02-summary-and-next-steps
