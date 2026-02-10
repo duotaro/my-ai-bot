@@ -1,0 +1,22 @@
+[
+  {
+    "question": "Gemini CLIの主な機能は何ですか？",
+    "expected_answer": "コード生成、質問応答、テキスト要約、複数ファイルにまたがるコードベースの理解、エージェント機能の5つ。",
+    "evaluation_criteria": "5つの機能がすべて含まれているか"
+  },
+  {
+    "question": "Gemini CLIは誰が開発しましたか？",
+    "expected_answer": "Googleによって開発された。",
+    "evaluation_criteria": "Googleが開発元であることが明記されているか"
+  },
+  {
+    "question": "Gemini CLIのターゲットユーザーは？",
+    "expected_answer": "ソフトウェア開発者やデータサイエンティスト。",
+    "evaluation_criteria": "開発者とデータサイエンティストの両方が含まれているか"
+  },
+  {
+    "question": "Llama 3とは何ですか？",
+    "expected_answer": "CONTEXTに情報がないため回答できない旨を伝える。",
+    "evaluation_criteria": "ハルシネーションせず、情報がない旨を正直に回答しているか"
+  }
+]
