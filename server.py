@@ -11,7 +11,8 @@ from langchain_community.document_loaders import TextLoader
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
-from langfuse.langchain import CallbackHandler  # 追加
+from langfuse.langchain import CallbackHandler
+from langfuse import get_client  # 追加
 
 load_dotenv()
 
@@ -36,37 +37,45 @@ vector_store = Chroma.from_documents(
 
 retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
-template = """
-以下のCONTEXTのみを使って、Questionに回答してください。
+# --- 1. Langfuseクライアントの初期化 --- (追加)
+langfuse = get_client()
 
-CONTEXT:
-{context}
+# --- 2. プロンプトをLangfuseから動的に取得する関数 --- (追加)
+def get_rag_prompt() -> ChatPromptTemplate:
+    """Langfuseからプロンプトを取得し、LangChainのプロンプトに変換する"""
+    langfuse_prompt = langfuse.get_prompt("rag-qa-prompt")
+    # Langfuseの {{variable}} をLangChainの {variable} に変換
+    template_text = langfuse_prompt.prompt
+    template_text = template_text.replace("{{context}}", "{context}")
+    template_text = template_text.replace("{{question}}", "{question}")
+    return ChatPromptTemplate.from_template(template_text)
 
-Question:
-{question}
-"""
-rag_prompt = ChatPromptTemplate.from_template(template)
-
-rag_chain = (
-    {"context": retriever, "question": RunnablePassthrough()}
-    | rag_prompt
-    | llm
-)
+# ハードコードしたプロンプトを削除し、Langfuseから取得するように変更
+# template = """..."""  # 削除
+# rag_prompt = ChatPromptTemplate.from_template(template)  # 削除
 
 def get_rag_response(question: str) -> str:
-    # --- Langfuseコールバックハンドラの作成 --- (追加)
-    # リクエストごとにハンドラを生成する
     langfuse_handler = CallbackHandler()
 
-    # configにcallbacksを渡すだけで、トレースが自動記録される (変更)
+    # リクエストごとにプロンプトを取得（最新バージョンが自動的に使われる） (変更)
+    rag_prompt = get_rag_prompt()
+
+    # RAGチェーンをリクエストごとに構築 (変更)
+    rag_chain = (
+        {"context": retriever, "question": RunnablePassthrough()}
+        | rag_prompt
+        | llm
+    )
+
     response = rag_chain.invoke(
         question,
         config={"callbacks": [langfuse_handler]}
     )
 
+    langfuse.flush()
     return response.content
 
-# --- 2. FastAPIのスキーマ定義 (Pydantic) ---
+# --- 3. FastAPIのスキーマ定義 (Pydantic) ---
 class ChatRequest(BaseModel):
     message: str
     history: List[Any]
@@ -74,7 +83,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
 
-# --- 3. FastAPIアプリケーションの定義 ---
+# --- 4. FastAPIアプリケーションの定義 ---
 app = FastAPI(
     title="AI Chatbot Server",
     description="LangChainとGeminiを使ったチャットボットAPI",
