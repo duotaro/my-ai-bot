@@ -12,7 +12,75 @@ from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langfuse.langchain import CallbackHandler
-from langfuse import get_client  # 追加
+from langfuse import get_client
+from input_validator import validate_input, InputValidationError # 追加
+from fastapi import FastAPI, HTTPException # 追加
+from pydantic import BaseModel, Field # 追加
+from typing import List # 追加
+from langchain.output_parsers import PydanticOutputParser # 追加
+from langchain_core.prompts import ChatPromptTemplate # 追加
+from output_filter import filter_output, OutputFilterError # 追加
+
+# 追加 出力構造をPydanticモデルとして定義
+class StructuredChatResponse(BaseModel):
+    """構造化されたチャット応答"""
+    answer: str = Field(description="ユーザーの質問に対する回答")
+    confidence: float = Field(
+        description="回答の信頼度（0.0〜1.0）",
+        ge=0.0,
+        le=1.0
+    )
+    sources: List[str] = Field(
+        description="回答の根拠となったソース（ファイル名や行番号）",
+        default=[]
+    )
+    follow_up_questions: List[str] = Field(
+        description="ユーザーが次に尋ねそうな質問の候補",
+        default=[],
+        max_length=3
+    )
+
+# OutputParserの初期化
+output_parser = PydanticOutputParser(pydantic_object=StructuredChatResponse)
+
+def get_rag_response_structured(question: str) -> StructuredChatResponse:
+    """RAGチェーンを実行し、構造化された応答を返す"""
+    langfuse_handler = CallbackHandler()
+
+    # プロンプトにformat instructionsを追加
+    rag_prompt_template = """
+    以下のCONTEXTを使って、ユーザーの質問に答えてください。
+
+    CONTEXT:
+    {context}
+
+    QUESTION:
+    {question}
+
+    {format_instructions}
+    """
+
+    rag_prompt = ChatPromptTemplate.from_template(rag_prompt_template)
+
+    # RAGチェーンを構築
+    rag_chain = (
+        {
+            "context": retriever,
+            "question": RunnablePassthrough(),
+            "format_instructions": lambda _: output_parser.get_format_instructions()
+        }
+        | rag_prompt
+        | llm
+        | output_parser  # パーサーをチェーンの最後に追加
+    )
+
+    response = rag_chain.invoke(
+        question,
+        config={"callbacks": [langfuse_handler]}
+    )
+
+    langfuse.flush()
+    return response
 
 load_dotenv()
 
@@ -93,9 +161,45 @@ app = FastAPI(
 def read_root():
     return {"message": "Welcome to the AI Chatbot API"}
 
-@app.post("/chat", response_model=ChatResponse)
+# 新: StructuredChatResponse を使用
+@app.post("/chat", response_model=StructuredChatResponse)
 def chat_endpoint(request: ChatRequest):
-    question_for_rag = request.message
-    ai_response = get_rag_response(question_for_rag)
+    # 入力バリデーション（追加）
+    try:
+        validate_input(request.message)
+    except InputValidationError as e:
+        # バリデーションエラーをLangfuseに記録
+        with langfuse.start_as_current_span(
+            name="input_validation_error",
+            input={"message": request.message},
+            output={"error": str(e)},
+            metadata={"error_type": "input_validation"},
+            level="ERROR"
+        ):
+            pass
+        langfuse.flush()
+        raise HTTPException(status_code=400, detail=str(e))
 
-    return ChatResponse(answer=ai_response)
+    # 構造化された応答を取得（変更）
+    structured_response = get_rag_response_structured(request.message)
+
+    # 出力フィルタリング（追加）
+    try:
+        filter_output(structured_response.answer)
+    except OutputFilterError as e:
+        # フィルタリングエラーをLangfuseに記録
+        with langfuse.start_as_current_span(
+            name="output_filter_error",
+            input={"message": request.message},
+            output={"answer": structured_response.answer, "error": str(e)},
+            metadata={"error_type": "output_filter"},
+            level="ERROR"
+        ):
+            pass
+        langfuse.flush()
+        raise HTTPException(
+            status_code=500,
+            detail="申し訳ございません。適切な回答を生成できませんでした。"
+        )
+
+    return structured_response
