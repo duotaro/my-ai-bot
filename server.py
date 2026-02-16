@@ -1,5 +1,6 @@
 import os
 from typing import List, Dict, Any
+from typing import Optional # 追加
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -13,13 +14,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langfuse.langchain import CallbackHandler
 from langfuse import get_client
-from input_validator import validate_input, InputValidationError # 追加
-from fastapi import FastAPI, HTTPException # 追加
-from pydantic import BaseModel, Field # 追加
-from typing import List # 追加
-from langchain.output_parsers import PydanticOutputParser # 追加
-from langchain_core.prompts import ChatPromptTemplate # 追加
-from output_filter import filter_output, OutputFilterError # 追加
+from input_validator import validate_input, InputValidationError
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from langchain.output_parsers import PydanticOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from output_filter import filter_output, OutputFilterError
 
 # 追加 出力構造をPydanticモデルとして定義
 class StructuredChatResponse(BaseModel):
@@ -40,9 +40,60 @@ class StructuredChatResponse(BaseModel):
         max_length=3
     )
 
-# OutputParserの初期化
+# OutputParserの初期化（「第8章」で定義済み）
 output_parser = PydanticOutputParser(pydantic_object=StructuredChatResponse)
 
+# メソッド追加 検索処理でメタデータフィルタを使う
+def get_rag_response_structured_with_filter(
+    question: str,
+    metadata_filter: Optional[Dict[str, Any]] = None
+) -> StructuredChatResponse:
+    """メタデータフィルタ付きでRAG検索を実行し、構造化された応答を返す"""
+    langfuse_handler = CallbackHandler()
+
+    # Retrieverの設定（フィルタ付き）
+    search_kwargs = {"k": 3}
+    if metadata_filter:
+        search_kwargs["filter"] = metadata_filter
+
+    retriever = vector_store.as_retriever(search_kwargs=search_kwargs)
+
+    # プロンプトにformat instructionsを追加（week3-03と同じ形式）
+    rag_prompt_template = """
+以下のCONTEXTを使って、ユーザーの質問に答えてください。
+
+CONTEXT:
+{context}
+
+QUESTION:
+{question}
+
+{format_instructions}
+"""
+
+    rag_prompt = ChatPromptTemplate.from_template(rag_prompt_template)
+
+    # RAGチェーンを構築
+    rag_chain = (
+        {
+            "context": retriever,
+            "question": RunnablePassthrough(),
+            "format_instructions": lambda _: output_parser.get_format_instructions()
+        }
+        | rag_prompt
+        | llm
+        | output_parser  # パーサーをチェーンの最後に追加
+    )
+
+    response = rag_chain.invoke(
+        question,
+        config={"callbacks": [langfuse_handler]}
+    )
+
+    langfuse.flush()
+    return response
+
+# 既存メソッド
 def get_rag_response_structured(question: str) -> StructuredChatResponse:
     """RAGチェーンを実行し、構造化された応答を返す"""
     langfuse_handler = CallbackHandler()
@@ -88,15 +139,42 @@ load_dotenv()
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-loader = TextLoader("knowledge.txt")
-documents = loader.load()
+# ドキュメント読み込み（複数ソース）
+all_documents = []
 
+# ドキュメント1: プロダクトドキュメント
+loader_product = TextLoader("knowledge.txt")
+product_docs = loader_product.load()
+for doc in product_docs:
+    doc.metadata.update({
+        "source": "knowledge.txt",
+        "category": "product",
+        "language": "ja",
+        "last_updated": "2024-01-15",
+        "version": "1.0"
+    })
+all_documents.extend(product_docs)
+
+# ドキュメント2: FAQ
+loader_faq = TextLoader("faq.txt")
+faq_docs = loader_faq.load()
+for doc in faq_docs:
+    doc.metadata.update({
+        "source": "faq.txt",
+        "category": "faq",
+        "language": "ja",
+        "last_updated": "2024-02-01"
+    })
+all_documents.extend(faq_docs)
+
+# チャンク分割（メタデータは自動的に引き継がれる）
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=500,
     chunk_overlap=50,
 )
-chunks = text_splitter.split_documents(documents)
+chunks = text_splitter.split_documents(all_documents)
 
+# ベクトルDB構築
 vector_store = Chroma.from_documents(
     documents=chunks,
     embedding=embeddings,
@@ -144,9 +222,11 @@ def get_rag_response(question: str) -> str:
     return response.content
 
 # --- 3. FastAPIのスキーマ定義 (Pydantic) ---
+# 【変更】metadata_filterを追加
 class ChatRequest(BaseModel):
     message: str
     history: List[Any]
+    metadata_filter: Optional[Dict[str, Any]] = None  # 追加
 
 class ChatResponse(BaseModel):
     answer: str
@@ -164,7 +244,7 @@ def read_root():
 # 新: StructuredChatResponse を使用
 @app.post("/chat", response_model=StructuredChatResponse)
 def chat_endpoint(request: ChatRequest):
-    # 入力バリデーション（追加）
+    # 入力バリデーション（「8章」で実装）
     try:
         validate_input(request.message)
     except InputValidationError as e:
@@ -180,10 +260,13 @@ def chat_endpoint(request: ChatRequest):
         langfuse.flush()
         raise HTTPException(status_code=400, detail=str(e))
 
-    # 構造化された応答を取得（変更）
-    structured_response = get_rag_response_structured(request.message)
+    # 【変更】メタデータフィルタ付きでRAG実行（構造化出力を取得） 
+    structured_response = get_rag_response_structured_with_filter(
+        request.message,
+        metadata_filter=request.metadata_filter
+    )
 
-    # 出力フィルタリング（追加）
+    # 出力フィルタリング（「8章」で実装）
     try:
         filter_output(structured_response.answer)
     except OutputFilterError as e:

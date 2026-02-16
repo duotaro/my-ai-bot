@@ -1,0 +1,10 @@
+Q: Gemini CLIのインストール方法を教えてください。
+A: Gemini CLIをインストールするには、以下のコマンドを実行してください。
+npm install -g @google/generative-ai-cli
+インストール後、gemini --version で正常にインストールされたか確認できます。
+
+Q: Gemini CLIは無料で使えますか？
+A: Gemini CLIは無料で利用できますが、APIの利用には料金が発生する場合があります。詳細はGoogle Cloud Platformの料金ページをご確認ください。
+
+Q: どのOSに対応していますか？
+A: Gemini CLIは、Windows、macOS、Linuxの主要なOSに対応しています。
