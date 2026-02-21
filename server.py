@@ -1,6 +1,6 @@
 import os
 from typing import List, Dict, Any
-from typing import Optional # 追加
+from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from output_filter import filter_output, OutputFilterError
+from fastapi.middleware.cors import CORSMiddleware  # 追加
 
 # 追加 出力構造をPydanticモデルとして定義
 class StructuredChatResponse(BaseModel):
@@ -235,6 +236,20 @@ class ChatResponse(BaseModel):
 app = FastAPI(
     title="AI Chatbot Server",
     description="LangChainとGeminiを使ったチャットボットAPI",
+)
+
+# CORSミドルウェアを追加（FastAPIアプリ定義の直後に記述）
+origins = [
+    "http://localhost:3000",                    # ローカル開発（Next.js）
+    "https://my-ai-bot-ui.vercel.app",              # 本番フロントエンド（実際のURLに変更）
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/")
