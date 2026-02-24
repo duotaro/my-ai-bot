@@ -20,7 +20,10 @@ from pydantic import BaseModel, Field
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from output_filter import filter_output, OutputFilterError
-from fastapi.middleware.cors import CORSMiddleware  # 追加
+from fastapi.middleware.cors import CORSMiddleware
+
+from fastapi.responses import StreamingResponse  # 追加
+import asyncio  # 追加
 
 # 追加 出力構造をPydanticモデルとして定義
 class StructuredChatResponse(BaseModel):
@@ -301,3 +304,33 @@ def chat_endpoint(request: ChatRequest):
         )
 
     return structured_response
+
+# 追加
+@app.post("/chat/stream")
+async def chat_stream_endpoint(request: ChatRequest):
+    """ストリーミング対応のチャットエンドポイント"""
+
+    async def generate():
+        # LangChainのastream()でトークンを逐次取得
+        rag_prompt = get_rag_prompt()
+        rag_chain = (
+            {"context": retriever, "question": RunnablePassthrough()}
+            | rag_prompt
+            | llm
+        )
+
+        async for chunk in rag_chain.astream(request.message):
+            if chunk.content:
+                # Server-Sent Events (SSE) 形式で送信
+                yield f"data: {chunk.content}\n\n"
+
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
+    )
