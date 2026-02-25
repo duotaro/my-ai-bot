@@ -1,5 +1,5 @@
-import os
-from typing import List, Iterable # 型定義用のモジュール
+import os                                                               
+from collections.abc import Iterable # 型定義用のモジュール
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
@@ -12,7 +12,7 @@ llm: ChatGoogleGenerativeAI = ChatGoogleGenerativeAI(
     temperature=0.7
 )
 
-def get_chat_response_stream(messages: List[BaseMessage]) -> Iterable:
+def get_chat_response_stream(messages: list[BaseMessage]) -> Iterable:
     """
     会話履歴を受け取り、AIの応答ストリームを返す
     """
@@ -22,7 +22,7 @@ def get_chat_response_stream(messages: List[BaseMessage]) -> Iterable:
 
 def main() -> None:
     # TypeScriptの 'const chatHistory: BaseMessage[] = []' と同等
-    chat_history: List[BaseMessage] = []
+    chat_history: list[BaseMessage] = []
 
     print("Bot: 起動しました。（型安全Ver.）")
 
