@@ -21,9 +21,6 @@ def main_bad_ai():
         if user_input.lower() == "exit":
             break
 
-
-        # 3. 履歴「すべて」をAPIに投げる
-        # これにより、AIは過去の会話（自分の発言含む）を「読む」ことができる
         response_stream = llm.stream([
             HumanMessage(content=user_input)
         ])
