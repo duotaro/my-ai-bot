@@ -23,7 +23,6 @@ Python・Gemini・LangChain・FastAPIを使って生成AIアプリを構築し�
 | `feature/week3-03-evaluation-prompt-management` | 第8章: プロンプト評価と管理 |
 | `feature/week4-01-deploy-and-ui` | 第9章: Cloud Runへのデプロイ |
 | `feature/week4-02-summary-and-next-steps` | 第10章: まとめと次のステップ |
-| `feature/week5-bonus` | ボーナス章 |
 
 ## 環境構築
 
